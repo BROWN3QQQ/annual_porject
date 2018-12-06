@@ -4,56 +4,53 @@ from random import random
 from lxml import etree
 from time import sleep
 
-
-useful_urls = dict(
-    captcha_url="http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand=" + str(random() * 10000),
-    accoun_type_url='http://ecard.scuec.edu.cn/accounthisTrjn.action',
-    login_url='http://ecard.scuec.edu.cn/pages/card/cardMain.jsp',
-    postUrl1="http://ecard.scuec.edu.cn/accounthisTrjn{}.action")
-
-useful_headers = dict(
-    get={
-        'Host': 'ecard.scuec.edu.cn',
-        'Connection': 'keep-alive',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
-                       /537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
-        'Referer': 'http://ecard.scuec.edu.cn/accleftframe.action'
-    },
-    post1={
-        'Host': 'ecard.scuec.edu.cn',
-        'Connection': 'keep-alive',
-        'Content-Length': '52',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
-                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn.action',
-    },
-    post2={
-        'Host': 'ecard.scuec.edu.cn',
-        'Connection': 'keep-alive',
-        'Content-Length': '45',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
-                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn1.action'
-    },
-    post3={
-        'Host': 'ecard.scuec.edu.cn',
-        'Connection': 'keep-alive',
-        'Content-Length': '0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
-                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action'
-    })
+login_url = 'http://ecard.scuec.edu.cn/pages/card/cardMain.jsp'
+captcha_url = "http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand=" + str(random() * 10000)
 
 
 class Crawler(LoginSim):
 
-    def __init__(self, headers_dict, urls):
-        LoginSim.__init__(self, urls['login_url'], urls['captcha_url'])
-        self.headers = headers_dict
-        self.urls = urls
+    def __init__(self):
+        LoginSim.__init__(self, login_url, captcha_url)
+        self.headers = dict(
+            get={
+                'Host': 'ecard.scuec.edu.cn',
+                'Connection': 'keep-alive',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                       /537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
+                'Referer': 'http://ecard.scuec.edu.cn/accleftframe.action'
+            },
+            post1={
+                'Host': 'ecard.scuec.edu.cn',
+                'Connection': 'keep-alive',
+                'Content-Length': '52',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+                'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn.action',
+            },
+            post2={
+                'Host': 'ecard.scuec.edu.cn',
+                'Connection': 'keep-alive',
+                'Content-Length': '45',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+                'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn1.action'
+            },
+            post3={
+                'Host': 'ecard.scuec.edu.cn',
+                'Connection': 'keep-alive',
+                'Content-Length': '0',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+                'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action'
+            })
+        self.urls = dict(
+            accoun_type_url='http://ecard.scuec.edu.cn/accounthisTrjn.action',
+            posturl="http://ecard.scuec.edu.cn/accounthisTrjn{}.action",
+            nextpage="http://ecard.scuec.edu.cn/accountconsubBrows.action")
         self.get_account_type = False
         self.postdata = dict(
             data1={
@@ -87,10 +84,10 @@ class Crawler(LoginSim):
 
     def get_information(self):
         postdata = parse.urlencode(self.postdata['data1']).encode()
-        first_req = request.Request(self.urls['postUrl'].format('1'), postdata, self.headers['post1'])
+        first_req = request.Request(self.urls['posturl'].format('1'), postdata, self.headers['post1'])
         postdata = parse.urlencode(self.postdata['data2']).encode()
-        second_req = request.Request(self.urls['postUrl'].format('2'), postdata, self.headers['post2'])
-        third_req = request.Request(self.urls['postUrl'].format('3'), None, self.headers['post3'])
+        second_req = request.Request(self.urls['posturl'].format('2'), postdata, self.headers['post2'])
+        third_req = request.Request(self.urls['posturl'].format('3'), None, self.headers['post3'])
         try:
             self.opener.open(first_req)
             self.opener.open(second_req)
@@ -99,6 +96,7 @@ class Crawler(LoginSim):
         except error.URLError as e:
             return e
         return result
+        # TODO 获取全量消费记录信息，需要生成迭代获取。
 
 # headers = {
 #     'Host': 'ecard.scuec.edu.cn',
@@ -118,5 +116,3 @@ class Crawler(LoginSim):
 # get_url = 'http://ecard.scuec.edu.cn/accleftframe.action'  # 利用cookie请求訪问还有一个网址
 #
 # get_request = request.Request(get_url, None, headers)
-
-
