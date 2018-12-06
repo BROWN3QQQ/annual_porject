@@ -1,14 +1,26 @@
-from http import cookiejar
 from urllib import error, parse, request
-from random import random
 from base64 import b64encode, b64decode
+from http import cookiejar
+from random import random
+from lxml import etree
 
 LOGIN_URL = 'http://ecard.scuec.edu.cn/loginstudent.action'
 CAPTCHAURL = "http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand="+str(random()*10000)
+TOPURL = 'http://ecard.scuec.edu.cn/pages/top.jsp'
+
+def save_img(o):
+    imagedata = b64decode(o.Get_Captcha())
+    file = open('1.jpg', "wb")
+    file.write(imagedata)
+    file.close()
+
+
+def get_td(resp):
+    return etree.parse(resp_top.encode('utf-8')).xpath('//td')
 
 
 class LoginSim:
-    def __init__(self, LoginUrl, CaptchaUrl):
+    def __init__(self, LoginUrl, CaptchaUrl, TopUrl):
         """
         构造函数
         :param LoginUrl:登陆链接
@@ -16,6 +28,7 @@ class LoginSim:
         """
         self.LoginUrl = LOGIN_URL
         self.CaptchaUrl = CaptchaUrl
+        self.TopUrl = TopUrl
         # 实例化cookiejar管理器并托管整个生命周期cookie
         self.cookie = cookiejar.CookieJar()
         handler = request.HTTPCookieProcessor(self.cookie)
@@ -47,16 +60,13 @@ class LoginSim:
             / 537.36(KHTML, likeGecko) Chrome / 67.0.3396.99Safari / 537.36'
         }
         postdata = parse.urlencode(postData)
-        request.Request(self.LoginUrl, postdata.encode(), headers)
-        return self.opener.open(request)
-# 以上是模拟登录并且获取cookie的代码
+        req = request.Request(self.LoginUrl, postdata.encode(), headers)
+        self.opener.open(req)
+        req_top = request.Request(self.TopUrl)
+        return self.opener.open(req_top)
 
-o = LoginSim(LOGIN_URL, CAPTCHAURL)
-imagedata = b64decode(o.Get_Captcha())
-file = open('1.jpg',"wb")
-file.write(imagedata)
-file.close()
-SecretCode = input('输入验证码： ')
-response = o.Login(SecretCode, '201621093013', '422001')
-page = response.read().decode("gb2312")
-print(page)
+# o = LoginSim(LOGIN_URL, CAPTCHAURL, TOPURL)
+# SecretCode = input('输入验证码： ')
+# response = o.Login(SecretCode, '201621093013', '422001')
+
+# print(response)

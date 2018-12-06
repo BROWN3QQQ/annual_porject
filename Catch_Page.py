@@ -1,74 +1,14 @@
-import urllib.request
-import urllib.parse
-import urllib.error
-import http.cookiejar
-import http.cookiejar
-import random
+from urllib import error, parse, request
+from base64 import b64decode
+from random import random
+from .LoginSimulator import LoginSim
+
 
 # 验证码地址和post地址
 LOGIN_URL = 'http://ecard.scuec.edu.cn/pages/card/cardMain.jsp'
-CaptchaUrl = "http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand="+str(random.random()*10000)
+CaptchaUrl = "http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand="+str(random()*10000)
 
 
-# 将cookies绑定到一个opener cookie由cookielib自动管理
-cookie_filename = 'cookie.txt'
-cookie = http.cookiejar.MozillaCookieJar(cookie_filename)
-handler = urllib.request.HTTPCookieProcessor(cookie)
-opener = urllib.request.build_opener(handler)
-
-
-
-picture = opener.open(CaptchaUrl).read()
-
-# 用openr访问验证码地址,获取cookie
-
-local = open('cap.png', 'wb')
-local.write(picture)
-local.close()
-
-
-# 保存验证码到本地
-
-SecretCode = input('输入验证码： ')
-
-# 打开保存的验证码图片 输入
-
-postData = {
-    'name': '',
-    'userType': '1',
-    'passwd': '',
-    'loginType': '2',
-    'rand': SecretCode,
-    'imageField.x': '22',
-    'imgaeField.y': '21'
-}
-
-# 根据抓包信息 构造表单
-
-headers = {
-    'Accept': 'text / html, application / xhtml + xml, application / xml;q = 0.9, image / webp, image / apng, * / *;q = 0.8',
-    'Host': 'ecard.scuec.edu.cn',
-    'Referer': 'http://ecard.scuec.edu.cn/homeLogin.action',
-    'User - Agent': 'Mozilla / 5.0(Windows NT 10.0;Win64;x64) AppleWebKit / 537.36(KHTML, likeGecko) Chrome / 67.0.3396.99Safari / 537.36'
-}
-
-postdata = urllib.parse.urlencode(postData).encode()
-request = urllib.request.Request(LOGIN_URL, postdata, headers)
-
-try:
-    response = opener.open(request)
-    page = response.read().decode("gb2312")
-    print(page)
-except urllib.error.URLError as e:
-    print(e.code, ':', e.reason)
-
-cookie.save(ignore_discard=True, ignore_expires=True)  # 保存cookie到cookie.txt中
-print(cookie)
-for item in cookie:
-    print('Name = ' + item.name)
-    print('Value = ' + item.value)
-
-以上是模拟登录的代码
 
 以下是请求一个页面
 
@@ -85,7 +25,6 @@ headers = {
     'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cookie': 'JSESSIONID=8AC604FF2E534C562F21C674AB8CF4DD'
 }
 get_url = 'http://ecard.scuec.edu.cn/accleftframe.action'  # 利用cookie请求訪问还有一个网址
 '''
