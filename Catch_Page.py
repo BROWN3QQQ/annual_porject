@@ -1,133 +1,122 @@
-from urllib import error, parse, request
-from base64 import b64decode
-from random import random
 from .LoginSimulator import LoginSim
+from urllib import error, parse, request
+from random import random
+from lxml import etree
+from time import sleep
 
 
-# 验证码地址和post地址
-LOGIN_URL = 'http://ecard.scuec.edu.cn/pages/card/cardMain.jsp'
-CaptchaUrl = "http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand="+str(random()*10000)
+useful_urls = dict(
+    captcha_url="http://ecard.scuec.edu.cn/homeLogin.action/getCheckpic.action?rand=" + str(random() * 10000),
+    accoun_type_url='http://ecard.scuec.edu.cn/accounthisTrjn.action',
+    login_url='http://ecard.scuec.edu.cn/pages/card/cardMain.jsp',
+    postUrl1="http://ecard.scuec.edu.cn/accounthisTrjn{}.action")
+
+useful_headers = dict(
+    get={
+        'Host': 'ecard.scuec.edu.cn',
+        'Connection': 'keep-alive',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                       /537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
+        'Referer': 'http://ecard.scuec.edu.cn/accleftframe.action'
+    },
+    post1={
+        'Host': 'ecard.scuec.edu.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '52',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn.action',
+    },
+    post2={
+        'Host': 'ecard.scuec.edu.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '45',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn1.action'
+    },
+    post3={
+        'Host': 'ecard.scuec.edu.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+                  /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+        'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action'
+    })
 
 
+class Crawler(LoginSim):
 
-以下是请求一个页面
+    def __init__(self, headers_dict, urls):
+        LoginSim.__init__(self, urls['login_url'], urls['captcha_url'])
+        self.headers = headers_dict
+        self.urls = urls
+        self.get_account_type = False
+        self.postdata = dict(
+            data1={
+                'account': '20167',
+                'inputStartDate': 'all',
+                'Submit': '+%C8%B7+%B6%A8+'},
+            data2={
+                'inputEndDate': '20180903',
+                'inputStartDate': '20181229'
+            })
 
-headers = {
-    'Host': 'ecard.scuec.edu.cn',
-    'Connection': 'keep-alive',
-    'Content-Length': '0',
-    'Cache-Control': 'max-age=0',
-    'Origin': 'http://ecard.scuec.edu.cn',
-    'Upgrade-Insecure-Requests': '1',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-}
-get_url = 'http://ecard.scuec.edu.cn/accleftframe.action'  # 利用cookie请求訪问还有一个网址
-'''
-# get_request = urllib.request.Request(get_url,None,headers)
-# get_response = opener.open(get_request)
-# print(get_response.read().decode("gb2312"))
-'''
-# cookie_filename1 = 'cookie1.txt'
-# cookie1 = http.cookiejar.MozillaCookieJar(cookie_filename1)
-# handler1 = urllib.request.HTTPCookieProcessor(cookie1)
-# opener1 = urllib.request.build_opener(handler1)
+    def get_account(self):
+        """
+        获取账户类型
+        :return: string 应填入postdata1中的account字段
+        """
+        account_req = request.Request(url=self.urls['account_type_url'], headers=self.headers['get'])
+        try:
+            account_res = self.opener.open(account_req)
+        except error.URLError as e:
+            return e
+        account_res = account_res.read().decode('gb2312')
+        tree = etree.HTML(account_res)
+        result = tree.xpath('//*[@id="account"]/option')
+        if len(result) < 1:
+            return False
+        else:
+            self.postdata['data1']['account'] = result[0]['value']
+            self.get_account_type = True
+            return True
 
-get_request = urllib.request.Request(get_url, None, headers)
-try:
-    response1 = opener.open(get_request)
-    page1 = response1.read().decode("gb2312")
-    print(page1)
-except urllib.error.URLError as e:
-    print(e.code, ':', e.reason)
+    def get_information(self):
+        postdata = parse.urlencode(self.postdata['data1']).encode()
+        first_req = request.Request(self.urls['postUrl'].format('1'), postdata, self.headers['post1'])
+        postdata = parse.urlencode(self.postdata['data2']).encode()
+        second_req = request.Request(self.urls['postUrl'].format('2'), postdata, self.headers['post2'])
+        third_req = request.Request(self.urls['postUrl'].format('3'), None, self.headers['post3'])
+        try:
+            self.opener.open(first_req)
+            self.opener.open(second_req)
+            sleep(1)
+            result = self.opener.open(third_req)
+        except error.URLError as e:
+            return e
+        return result
 
-cookie.save(ignore_discard=True, ignore_expires=True)  # 保存cookie到cookie.txt中
-print(cookie)
+# headers = {
+#     'Host': 'ecard.scuec.edu.cn',
+#     'Connection': 'keep-alive',
+#     'Content-Length': '0',
+#     'Cache-Control': 'max-age=0',
+#     'Origin': 'http://ecard.scuec.edu.cn',
+#     'Upgrade-Insecure-Requests': '1',
+#     'Content-Type': 'application/x-www-form-urlencoded',
+#     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\
+#                   /537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
+#     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+#     'Referer': 'http://ecard.scuec.edu.cn/accleftframe.action',
+#     'Accept-Encoding': 'gzip, deflate',
+#     'Accept-Language': 'zh-CN,zh;q=0.9',
+# }
+# get_url = 'http://ecard.scuec.edu.cn/accleftframe.action'  # 利用cookie请求訪问还有一个网址
+#
+# get_request = request.Request(get_url, None, headers)
 
-# 以下是请求另外一个页面
 
-
-postUrl1 = "http://ecard.scuec.edu.cn/accounthisTrjn1.action"
-postUrl2 = "http://ecard.scuec.edu.cn/accounthisTrjn2.action"
-postUrl3 = "http://ecard.scuec.edu.cn/accounthisTrjn3.action"
-
-# 根据抓包信息 构造表单
-headers1 = {
-    'Host': 'ecard.scuec.edu.cn',
-    'Connection': 'keep-alive',
-    'Content-Length': '0',
-    'Cache-Control': 'max-age=0',
-    'Origin': 'http://ecard.scuec.edu.cn',
-    'Upgrade-Insecure-Requests': '1',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn.action',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cookie': 'JSESSIONID=2BAD15A8E3FCF0FF07121FF98700D026'
-}
-
-headers2 = {
-    'Host': 'ecard.scuec.edu.cn',
-    'Connection': 'keep-alive',
-    'Content-Length': '0',
-    'Cache-Control': 'max-age=0',
-    'Origin': 'http://ecard.scuec.edu.cn',
-    'Upgrade-Insecure-Requests': '1',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn1.action',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cookie': 'JSESSIONID=2BAD15A8E3FCF0FF07121FF98700D026'
-}
-
-headers3 = {
-    'Host': 'ecard.scuec.edu.cn',
-    'Connection': 'keep-alive',
-    'Content-Length': '0',
-    'Cache-Control': 'max-age=0',
-    'Origin': 'http://ecard.scuec.edu.cn',
-    'Upgrade-Insecure-Requests': '1',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Referer': 'http://ecard.scuec.edu.cn/accounthisTrjn2.action',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cookie': 'JSESSIONID=2BAD15A8E3FCF0FF07121FF98700D026'
-}
-
-postData1 = {
-    'account': '20167',
-    'inputStartDate': 'all',
-    'Submit': '+%C8%B7+%B6%A8+'
-}
-postdata1 = urllib.parse.urlencode(postData1).encode()
-
-postData2 = {
-    'inputEndDate': '20181129',
-    'inputStartDate': '20180929'
-}
-postdata2 = urllib.parse.urlencode(postData2).encode()
-
-request = urllib.request.Request(postUrl2, postdata , headers2)
-request1 = urllib.request.Request(postUrl3, None, headers3)
-try:
-    response = opener.open(request1)
-    page = response.read().decode("gb2312")
-    print(page)
-except urllib.error.URLError as e:
-    print(e.code, ':', e.reason)
-
-# cookie.save(ignore_discard=True, ignore_expires=True)  # 保存cookie到cookie.txt中
-# print(cookie)
-# for item in cookie:
-#     print('Name = ' + item.name)
-#     print('Value = ' + item.value)
